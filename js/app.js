@@ -23,6 +23,8 @@ async function render() {
   });
   if (fitOff) fitOff();
   fitOff = bindAutoFit(session.els.screen);
+  session.map?.invalidate();
+  window.setTimeout(() => session.map?.invalidate(), 200);
 }
 
 await render();

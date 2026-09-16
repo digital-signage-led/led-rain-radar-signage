@@ -115,8 +115,8 @@ html.is-boot #boot-status { display: flex; }
   border-radius: 16px;
   overflow: hidden;
   background: #9ec9e8;
-  transform: translate(var(--map-x, 0px), var(--map-y, 0px)) scale(var(--map-scale, 1));
-  transform-origin: center center;
+  margin-left: var(--map-x, 0px);
+  margin-top: var(--map-y, 0px);
 }
 
 .map-canvas,
@@ -126,8 +126,20 @@ html.is-boot #boot-status { display: flex; }
   background: #9ec9e8;
 }
 
-.leaflet-container { font-family: inherit; }
-.rain-overlay { image-rendering: auto; }
+.leaflet-container {
+  font-family: inherit;
+  background: #9ec9e8 !important;
+}
+.leaflet-tile,
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  background: transparent !important;
+}
+.rain-overlay {
+  image-rendering: auto;
+  mix-blend-mode: multiply;
+}
 
 .info-panel {
   min-width: 0;

@@ -73,6 +73,7 @@ export async function renderFutureRain(ctx) {
     holdMs: 2800,
     onFrame(frame, index) {
       ctx.map?.setOverlay(tileUrl(frame));
+      if (index === 0) ctx.map?.invalidate();
       if (clock) clock.textContent = formatClock(frameDate(frame));
       if (kindEl) kindEl.textContent = kindLabel(frame);
       renderSlots(index);

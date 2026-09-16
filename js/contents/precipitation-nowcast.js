@@ -60,6 +60,7 @@ export async function renderPrecipitationNowcast(ctx) {
     holdMs: 2600,
     onFrame(frame, index) {
       ctx.map?.setOverlay(tileUrl(frame));
+      if (index === 0) ctx.map?.invalidate();
       const date = frameDate(frame);
       const ahead = minutesAhead(nowDate, date);
       if (clock) clock.textContent = formatClock(date);

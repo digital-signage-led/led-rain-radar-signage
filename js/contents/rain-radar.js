@@ -42,6 +42,7 @@ export async function renderRainRadar(ctx) {
     holdMs: 2600,
     onFrame(frame, index, total) {
       ctx.map?.setOverlay(tileUrl(frame));
+      if (index === 0) ctx.map?.invalidate();
       if (clock) clock.textContent = formatClock(frameDate(frame));
       if (timeline) {
         const pct = total <= 1 ? 100 : (index / (total - 1)) * 100;

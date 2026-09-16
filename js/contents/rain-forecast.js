@@ -1,4 +1,6 @@
 import { fetchRainForecast } from "../services/rain.js";
+import { fetchRadar } from "../services/radar.js";
+import { tileUrl } from "../services/jma-tiles.js";
 import { errorPanel, popCell, popTone, timesBlock } from "./shared-ui.js";
 
 function popRow(pops) {
@@ -63,5 +65,18 @@ export async function renderRainForecast(ctx) {
       fromCache: data.fromCache
     })}
   `;
+
+  try {
+    const radar = await fetchRadar({
+      prefecture: ctx.prefecture.slug,
+      pointId: ctx.point?.id,
+      pastMinutes: 30
+    });
+    const current = radar.frames?.[radar.frames.length - 1];
+    if (current) ctx.map?.setOverlay(tileUrl(current));
+    ctx.map?.invalidate();
+  } catch {
+    /* 予報本文は出したまま、雨雲だけ省略 */
+  }
   return data;
 }
