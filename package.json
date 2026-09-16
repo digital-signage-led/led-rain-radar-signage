@@ -1,0 +1,11 @@
+{
+  "name": "led-rain-radar-signage",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "47都道府県対応の雨・レーダーLEDサイネージ。雨の予報 / 雨雲レーダー / 今後の雨 / 降水ナウキャスト。",
+  "scripts": {
+    "start": "node scripts/preview-server.mjs",
+    "test": "node scripts/test-catalog.mjs"
+  }
+}
