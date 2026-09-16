@@ -3,21 +3,27 @@ import { CONTENTS, canonicalContent } from "../js/data/contents.js";
 import { PREFECTURES, canonicalPrefecture, regionOf } from "../js/data/prefectures.js";
 import { OBSERVATION_POINTS, defaultPoint, pointsForPrefecture } from "../js/data/observation-points.js";
 
-assert.equal(PREFECTURES.length, 47);
-assert.equal(CONTENTS.length, 4);
-assert.deepEqual(CONTENTS.map((c) => c.id), [
-  "rain_forecast",
-  "rain_radar",
-  "future_rain",
-  "precipitation_nowcast"
-]);
-assert.equal(new Set(PREFECTURES.map((p) => p.slug)).size, 47);
+const prefs = PREFECTURES.filter((p) => !p.national);
+assert.equal(prefs.length, 47);
+assert.equal(PREFECTURES.length, 48);
+assert.equal(PREFECTURES.filter((p) => p.national).length, 1);
+assert.equal(canonicalPrefecture("zenkoku"), "japan");
+assert.equal(CONTENTS.length, 1);
+assert.equal(CONTENTS[0].id, "rain");
+assert.equal(CONTENTS[0].name, "雨・レーダー");
+assert.equal(canonicalContent("rain_forecast"), "rain");
+assert.equal(canonicalContent("rain_radar"), "rain");
+assert.equal(canonicalContent("future_rain"), "rain");
+assert.equal(canonicalContent("precipitation_nowcast"), "rain");
+assert.equal(canonicalContent("radar"), "rain");
+assert.equal(new Set(PREFECTURES.map((p) => p.slug)).size, 48);
 
 for (const pref of PREFECTURES) {
   assert.ok(pref.id && pref.slug && pref.name && pref.region);
   assert.ok(Number.isFinite(pref.centerLatitude));
   assert.ok(Number.isFinite(pref.centerLongitude));
-  assert.ok(pref.defaultZoom >= 6 && pref.defaultZoom <= 11);
+  assert.ok(Number.isInteger(pref.defaultZoom));
+  assert.ok(pref.defaultZoom >= 5 && pref.defaultZoom <= 10);
   assert.ok(pref.dataId);
   const points = pointsForPrefecture(pref.slug);
   assert.ok(points.length >= 1, `${pref.slug} has no observation points`);
@@ -31,12 +37,11 @@ for (const point of OBSERVATION_POINTS) {
 }
 
 assert.equal(canonicalPrefecture("IWATE"), "iwate");
-assert.equal(canonicalContent("radar"), "rain_radar");
-assert.equal(PREFECTURES.length * CONTENTS.length, 188);
+assert.equal(PREFECTURES.length * CONTENTS.length, 48);
 
 const zooms = Object.fromEntries(PREFECTURES.map((p) => [p.slug, p.defaultZoom]));
+assert.ok(zooms.japan <= zooms.hokkaido, "Nationwide must not be closer than Hokkaido");
 assert.ok(zooms.hokkaido < zooms.tokyo, "Hokkaido must be more zoomed out than Tokyo");
 assert.ok(zooms.hokkaido < zooms.osaka);
-assert.ok(Math.abs(zooms.tokyo - zooms.osaka) < 1);
 
-console.log("catalog ok: 47 prefectures, 4 contents, 188 URLs, observation points filtered");
+console.log("catalog ok: nationwide + 47 prefectures, 1 combined rain content");

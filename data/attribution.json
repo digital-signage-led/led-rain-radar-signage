@@ -1,7 +1,7 @@
 {
-  "map": "地理院タイル © 国土地理院",
-  "mapPage": "https://maps.gsi.go.jp/development/ichiran.html",
+  "map": "都道府県界",
+  "mapPage": "",
   "weather": "天気予報・降水ナウキャスト・降水短時間予報 © 気象庁",
   "weatherPage": "https://www.jma.go.jp/bosai/",
-  "text": "地理院タイル © 国土地理院 ／ 降水ナウキャスト・短時間予報 © 気象庁"
+  "text": "都道府県界 ／ 降水ナウキャスト・短時間予報 © 気象庁"
 }

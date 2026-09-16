@@ -12,9 +12,14 @@ export const INTENSITY_STEPS = [
 ];
 
 export function intensityLegend() {
-  return INTENSITY_STEPS.map((step) => (
-    `<span class="legend-step"><i style="background:${step.color}"></i>${step.label}</span>`
+  const steps = INTENSITY_STEPS.map((step) => (
+    `<span class="legend-step"><i style="background:${step.color}"></i><em>${step.label}</em></span>`
   )).join("");
+  return `
+    <div class="legend-title">雨の強さ <small>mm/h</small></div>
+    <div class="legend-scale">${steps}</div>
+    <div class="legend-hint"><span>弱い</span><span>猛烈</span></div>
+  `;
 }
 
 export function popCell(value) {
@@ -56,13 +61,14 @@ export function playController({ frames, playMs, onFrame, holdMs = 2400 }) {
 
   const step = () => {
     if (stopped || !frames.length) return;
-    onFrame(frames[index], index, frames.length);
-    const frame = frames[index];
-    const isLast = index === frames.length - 1;
+    const current = index;
+    const isLast = current === frames.length - 1;
     const delay = isLast ? holdMs : (playMs || 1800);
-    index = (index + 1) % frames.length;
-    timer = window.setTimeout(step, Math.max(1200, delay));
-    return frame;
+    index = (current + 1) % frames.length;
+    Promise.resolve(onFrame(frames[current], current, frames.length)).finally(() => {
+      if (stopped) return;
+      timer = window.setTimeout(step, Math.max(400, delay));
+    });
   };
 
   step();

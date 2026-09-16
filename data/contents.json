@@ -2,9 +2,11 @@
   "category": "雨・レーダー",
   "resolution": { "width": 1920, "height": 1080 },
   "contents": [
-    { "id": "rain_forecast", "name": "雨の予報", "data": "jma_forecast" },
-    { "id": "rain_radar", "name": "雨雲レーダー", "data": "jma_nowcast_hrpns" },
-    { "id": "future_rain", "name": "今後の雨", "data": "jma_nowcast_hrpns+jma_rasrf" },
-    { "id": "precipitation_nowcast", "name": "降水ナウキャスト", "data": "jma_nowcast_hrpns" }
+    {
+      "id": "rain",
+      "name": "雨・レーダー",
+      "includes": ["雨の予報", "雨雲レーダー", "今後の雨", "降水ナウキャスト"],
+      "aliases": ["rain_forecast", "rain_radar", "future_rain", "precipitation_nowcast"]
+    }
   ]
 }

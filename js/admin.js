@@ -1,10 +1,9 @@
-import { CONTENTS } from "./data/contents.js";
 import { PREFECTURES } from "./data/prefectures.js";
 import { comboKey, defaultPoint, pointsForPrefecture } from "./data/observation-points.js";
-import { mountSignage } from "./signage-view.js";
 import {
   allCombos,
   comboStatus,
+  DRAFT_KEY,
   loadDraft,
   persistPublishedFile,
   publishCombo,
@@ -17,10 +16,20 @@ const $ = (id) => document.getElementById(id);
 
 const state = {
   store: loadDraft(),
-  prefecture: "iwate",
-  content: "rain_forecast",
+  prefecture: new URLSearchParams(location.search).get("prefecture") || "iwate",
+  content: "rain",
   preview: null
 };
+
+function fitPreviewFrame() {
+  const host = document.querySelector(".admin-preview");
+  const frame = $("preview-frame");
+  if (!host || !frame) return;
+  const scale = Math.min(host.clientWidth / 1920, host.clientHeight / 1080);
+  const ox = (host.clientWidth - 1920 * scale) / 2;
+  const oy = (host.clientHeight - 1080 * scale) / 2;
+  frame.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
+}
 
 function fillSelect(el, items, getValue, getLabel, selected) {
   el.innerHTML = items.map((item) => {
@@ -79,30 +88,17 @@ function readCommonInputs() {
 }
 
 function syncContentInputs() {
-  const s = state.store.contents;
-  $("show-weekly").checked = s.rain_forecast.showWeekly !== false;
-  $("show-temps").checked = s.rain_forecast.showTemps !== false;
-  $("radar-play").value = s.rain_radar.playMs;
-  $("radar-past").value = s.rain_radar.pastMinutes;
-  $("future-play").value = s.future_rain.playMs;
-  $("future-min").value = s.future_rain.futureMinutes;
-  $("nowcast-play").value = s.precipitation_nowcast.playMs;
-  $("nowcast-horizon").value = s.precipitation_nowcast.horizonMinutes;
-  document.querySelectorAll("[data-for-content]").forEach((el) => {
-    el.hidden = el.dataset.forContent !== state.content;
-  });
+  const s = state.store.contents.rain;
+  $("show-temps").checked = s.showTemps !== false;
+  $("rain-play").value = s.playMs;
+  $("future-min").value = s.futureMinutes;
 }
 
 function readContentInputs() {
-  const s = state.store.contents;
-  s.rain_forecast.showWeekly = $("show-weekly").checked;
-  s.rain_forecast.showTemps = $("show-temps").checked;
-  s.rain_radar.playMs = Number($("radar-play").value);
-  s.rain_radar.pastMinutes = Number($("radar-past").value);
-  s.future_rain.playMs = Number($("future-play").value);
-  s.future_rain.futureMinutes = Number($("future-min").value);
-  s.precipitation_nowcast.playMs = Number($("nowcast-play").value);
-  s.precipitation_nowcast.horizonMinutes = Number($("nowcast-horizon").value);
+  const s = state.store.contents.rain;
+  s.showTemps = $("show-temps").checked;
+  s.playMs = Number($("rain-play").value);
+  s.futureMinutes = Number($("future-min").value);
 }
 
 function statusLabel() {
@@ -111,30 +107,33 @@ function statusLabel() {
   $("combo-status").dataset.status = status;
 }
 
-async function renderPreview() {
-  const host = $("preview-host");
-  if (state.preview) {
-    state.preview.destroy();
-    if (state.preview.map) {
-      try { state.preview.map.destroy(); } catch { /* ignore */ }
-    }
+function renderPreview() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(state.store));
+  } catch {
+    /* ignore */
   }
-  host.innerHTML = "";
-  const wrap = document.createElement("div");
-  wrap.className = "preview-scale";
-  host.appendChild(wrap);
-  state.preview = await mountSignage(wrap, {
-    prefecture: state.prefecture,
-    content: state.content,
-    pointId: currentPointId(),
-    settings: {
-      common: state.store.common,
-      content: state.store.contents[state.content],
-      pointId: currentPointId()
-    },
-    fit: true,
-    fitHost: host
-  });
+  const frame = $("preview-frame");
+  const url = new URL("index.html", location.href);
+  url.searchParams.set("prefecture", state.prefecture);
+  url.searchParams.set("content", state.content);
+  url.searchParams.set("point", currentPointId() || "");
+  url.searchParams.set("preview", "1");
+  url.searchParams.set("_", String(Date.now()));
+  frame.src = url.href;
+  requestAnimationFrame(fitPreviewFrame);
+}
+
+function pushPreviewDesign() {
+  const frame = $("preview-frame");
+  try {
+    frame.contentWindow?.postMessage({
+      type: "rain-preview-design",
+      common: state.store.common
+    }, location.origin);
+  } catch {
+    /* ignore */
+  }
 }
 
 function fillPoints() {
@@ -152,15 +151,13 @@ function publicHref(pref, content) {
 
 function renderUrls() {
   const qPref = $("url-pref").value.trim();
-  const qContent = $("url-content").value;
   const qStatus = $("url-status").value;
   const rows = allCombos().filter((row) => {
     if (qPref && !(`${row.prefecture.name}${row.prefecture.slug}`.includes(qPref))) return false;
-    if (qContent && row.content.id !== qContent) return false;
     if (qStatus && row.status !== qStatus) return false;
     return true;
   });
-  $("url-count").textContent = `${rows.length} / 188`;
+  $("url-count").textContent = `${rows.length} / ${PREFECTURES.length}`;
   $("url-table").innerHTML = rows.map((row) => {
     const url = publicHref(row.prefecture.slug, row.content.id);
     return `<tr>
@@ -183,8 +180,6 @@ function toast(message) {
 
 function bind() {
   fillSelect($("pref-select"), PREFECTURES, (p) => p.slug, (p) => p.name, state.prefecture);
-  fillSelect($("content-select"), CONTENTS, (c) => c.id, (c) => c.name, state.content);
-  fillSelect($("url-content"), [{ id: "", name: "すべてのコンテンツ" }, ...CONTENTS], (c) => c.id, (c) => c.name, "");
   fillPoints();
   syncCommonInputs();
   syncContentInputs();
@@ -193,13 +188,6 @@ function bind() {
   $("pref-select").addEventListener("change", () => {
     state.prefecture = $("pref-select").value;
     fillPoints();
-    statusLabel();
-    renderPreview();
-  });
-  $("content-select").addEventListener("change", () => {
-    state.content = $("content-select").value;
-    fillPoints();
-    syncContentInputs();
     statusLabel();
     renderPreview();
   });
@@ -212,19 +200,7 @@ function bind() {
     el.addEventListener("input", () => {
       readCommonInputs();
       readContentInputs();
-      if (state.preview?.els?.screen) {
-        import("./viewport.js").then(({ applyDesignTokens }) => {
-          applyDesignTokens(state.preview.els.screen, { common: state.store.common });
-        });
-        const common = state.store.common;
-        state.preview.els.stamp.hidden = common.showStamp === false;
-        state.preview.els.point.hidden = common.showPoint === false;
-        state.preview.els.panel.hidden = common.showPanel === false;
-        state.preview.els.attr.hidden = common.showAttribution === false;
-        state.preview.els.screen.classList.toggle("is-panel-off", common.showPanel === false);
-        state.preview.els.screen.classList.toggle("is-legend-off", common.showLegend === false);
-        state.preview.els.screen.classList.toggle("is-clock-off", common.showClock === false);
-      }
+      pushPreviewDesign();
     });
     if (el.tagName === "INPUT" && el.type === "number") {
       el.addEventListener("change", () => {
@@ -258,14 +234,13 @@ function bind() {
     statusLabel();
     renderUrls();
     await persistPublishedFile(state.store);
-    toast("188件を公開設定に反映しました");
+    toast("全件を公開設定に反映しました");
   });
   $("btn-open").addEventListener("click", () => {
     window.open(publicHref(state.prefecture, state.content), "_blank");
   });
 
   $("url-pref").addEventListener("input", renderUrls);
-  $("url-content").addEventListener("change", renderUrls);
   $("url-status").addEventListener("change", renderUrls);
   $("url-table").addEventListener("click", async (event) => {
     const btn = event.target.closest("[data-copy]");
@@ -282,3 +257,8 @@ function bind() {
 bind();
 renderPreview();
 renderUrls();
+window.addEventListener("resize", fitPreviewFrame);
+$("preview-frame").addEventListener("load", () => {
+  fitPreviewFrame();
+  pushPreviewDesign();
+});

@@ -32,6 +32,7 @@ export function defaultCommon() {
 
 export function defaultContentSettings() {
   return {
+    rain: { showTemps: true, playMs: 700, futureMinutes: 180 },
     rain_forecast: { showWeekly: true, showTemps: true },
     rain_radar: { playMs: 1800, pastMinutes: 60 },
     future_rain: { playMs: 2200, futureMinutes: 180 },
@@ -68,6 +69,7 @@ function mergeStore(base, patch) {
   out.publishedAt = patch.publishedAt || base.publishedAt || null;
   out.common = { ...out.common, ...(patch.common || {}) };
   out.contents = {
+    rain: { ...out.contents.rain, ...(patch.contents?.rain || {}) },
     rain_forecast: { ...out.contents.rain_forecast, ...(patch.contents?.rain_forecast || {}) },
     rain_radar: { ...out.contents.rain_radar, ...(patch.contents?.rain_radar || {}) },
     future_rain: { ...out.contents.future_rain, ...(patch.contents?.future_rain || {}) },
@@ -155,6 +157,17 @@ export function settingsForSignage(prefecture, content) {
     pointId: published.points[key],
     status: published.status[key] || "published",
     publishedAt: published.publishedAt
+  };
+}
+
+export function settingsForPreview(prefecture, content) {
+  const draft = loadDraft();
+  const key = comboKey(prefecture, content);
+  return {
+    common: draft.common,
+    content: draft.contents[content] || draft.contents.rain || {},
+    pointId: draft.points[key],
+    status: draft.status[key] || "draft"
   };
 }
 

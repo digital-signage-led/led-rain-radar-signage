@@ -7,6 +7,19 @@ export function readWindowSize() {
   return { width: Math.max(1, Math.round(w)), height: Math.max(1, Math.round(h)) };
 }
 
+export function measureVisibleBox(el) {
+  if (!el || el === document.body) return readWindowSize();
+  const r = el.getBoundingClientRect();
+  const vw = window.innerWidth || document.documentElement.clientWidth || 1;
+  const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+  const width = Math.min(r.width, Math.max(0, Math.min(r.right, vw) - Math.max(r.left, 0)));
+  const height = Math.min(r.height, Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)));
+  return {
+    width: Math.max(1, Math.round(width || r.width || el.clientWidth || 1)),
+    height: Math.max(1, Math.round(height || r.height || el.clientHeight || 1))
+  };
+}
+
 export function fitFixedScreen(element, designW = FIXED_DESIGN.width, designH = FIXED_DESIGN.height, bounds = null) {
   if (!element) return 1;
   const win = bounds || readWindowSize();
@@ -14,13 +27,14 @@ export function fitFixedScreen(element, designW = FIXED_DESIGN.width, designH = 
   const ox = (win.width - designW * scale) / 2;
   const oy = (win.height - designH * scale) / 2;
   element.style.position = "absolute";
-  element.style.left = "0";
-  element.style.top = "0";
+  element.style.left = `${ox}px`;
+  element.style.top = `${oy}px`;
   element.style.width = `${designW}px`;
   element.style.height = `${designH}px`;
   element.style.transformOrigin = "0 0";
-  element.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
   element.style.setProperty("--fit-scale", String(scale));
+  element.style.removeProperty("zoom");
+  element.style.transform = "none";
   return scale;
 }
 

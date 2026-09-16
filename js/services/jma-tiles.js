@@ -103,17 +103,13 @@ export function nowcastFrames(catalog, horizonMinutes = 60) {
 
 export function futureRainFrames(catalog, futureMinutes = 180) {
   const nowMs = catalog.latestObsMs || Date.now();
-  const futureCut = nowMs + futureMinutes * 60 * 1000;
+  const nearCut = nowMs + Math.min(55, Number(futureMinutes) || 180) * 60 * 1000;
   const current = catalog.latestObs ? [{ ...catalog.latestObs, kind: "now" }] : [];
   const near = (catalog.nowcastForecast || []).filter((f) => {
     const ms = parseNowcMs(f.validtime);
-    return ms != null && ms > nowMs && ms <= nowMs + 55 * 60 * 1000;
+    return ms != null && ms > nowMs && ms <= nearCut;
   });
-  const far = (catalog.rasrf || []).filter((f) => {
-    const ms = parseNowcMs(f.validtime);
-    return ms != null && ms > nowMs + 50 * 60 * 1000 && ms <= futureCut;
-  });
-  return uniqueFrames([...current, ...near, ...far]);
+  return uniqueFrames([...current, ...near]);
 }
 
 export async function loadTileSet(kind, options) {

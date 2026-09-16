@@ -1,20 +1,18 @@
-import { renderFutureRain } from "./contents/future-rain.js";
-import { renderPrecipitationNowcast } from "./contents/precipitation-nowcast.js";
-import { renderRainForecast } from "./contents/rain-forecast.js";
-import { renderRainRadar } from "./contents/rain-radar.js";
+import { renderRainCombined } from "./contents/rain-combined.js";
 import { getContent } from "./data/contents.js";
 import { defaultPoint, getPoint } from "./data/observation-points.js";
 import { getPrefecture, regionOf } from "./data/prefectures.js";
 import { createMap, MAP_ATTRIBUTION } from "./map/map-engine.js";
 import { formatStamp, nextForecastRefreshDelay } from "./services/jma-common.js";
 import { settingsForSignage } from "./store.js";
-import { applyDesignTokens, fitFixedScreen, FIXED_DESIGN } from "./viewport.js";
+import { applyDesignTokens, fitFixedScreen, measureVisibleBox, FIXED_DESIGN } from "./viewport.js";
 
 const RENDERERS = {
-  rain_forecast: renderRainForecast,
-  rain_radar: renderRainRadar,
-  future_rain: renderFutureRain,
-  precipitation_nowcast: renderPrecipitationNowcast
+  rain: renderRainCombined,
+  rain_forecast: renderRainCombined,
+  rain_radar: renderRainCombined,
+  future_rain: renderRainCombined,
+  precipitation_nowcast: renderRainCombined
 };
 
 function screenHtml() {
@@ -55,7 +53,7 @@ export function buildScreen(root) {
   };
 }
 
-function applyVisibility(els, common) {
+export function applyVisibility(els, common) {
   els.stamp.hidden = common.showStamp === false;
   els.point.hidden = common.showPoint === false;
   els.panel.hidden = common.showPanel === false;
@@ -88,23 +86,25 @@ export async function mountSignage(root, options = {}) {
   els.screen.dataset.content = content.id;
   els.title.textContent = `${prefecture.name}｜${content.name}`;
   els.stamp.textContent = "データ取得中";
-  els.point.textContent = point ? `観測地点 ${point.name}` : "";
+  els.point.textContent = prefecture.national ? "" : (point ? `観測地点 ${point.name}` : "");
   els.attr.textContent = MAP_ATTRIBUTION;
   els.panel.innerHTML = `
     <div class="panel-kicker">${content.name}</div>
-    <div class="panel-area">${prefecture.name}${point ? `／${point.name}` : ""}</div>
+    <div class="panel-area">${prefecture.name}${!prefecture.national && point ? `／${point.name}` : ""}</div>
     <p class="wx-hint">${content.description}</p>
-    <div class="time-grid"><div><span class="k">対象地域</span><strong>${regionOf(prefecture.slug).name} ${prefecture.name}</strong></div></div>
+    <div class="time-grid"><div><span class="k">対象地域</span><strong>${regionOf(prefecture.slug).name}</strong></div></div>
   `;
   applyDesignTokens(els.screen, { common });
   applyVisibility(els, common);
+  if (prefecture.national) els.point.hidden = true;
+  let map = options.map || null;
   const fitTo = () => {
     if (options.fit === false) return;
     const host = options.fitHost || els.root;
-    const bounds = host && host !== document.body
-      ? { width: Math.max(1, host.clientWidth), height: Math.max(1, host.clientHeight) }
-      : null;
+    const bounds = host && host !== document.body ? measureVisibleBox(host) : null;
     fitFixedScreen(els.screen, FIXED_DESIGN.width, FIXED_DESIGN.height, bounds);
+    els.screen.style.maxWidth = "none";
+    map?.invalidate();
   };
   fitTo();
   if (options.fitHost) {
@@ -112,8 +112,9 @@ export async function mountSignage(root, options = {}) {
     ro.observe(options.fitHost);
     cleanups.push(() => ro.disconnect());
   }
+  window.addEventListener("resize", fitTo);
+  cleanups.push(() => window.removeEventListener("resize", fitTo));
 
-  let map = options.map || null;
   if (!map) {
     map = await createMap(els.mapCanvas, {
       prefecture,
@@ -123,6 +124,7 @@ export async function mountSignage(root, options = {}) {
   } else {
     map.setView(prefecture, point);
   }
+  fitTo();
 
   const ctx = {
     prefecture,
@@ -135,7 +137,7 @@ export async function mountSignage(root, options = {}) {
     addCleanup(fn) { cleanups.push(fn); }
   };
 
-  const render = RENDERERS[content.id] || renderRainForecast;
+  const render = RENDERERS[content.id] || renderRainCombined;
   const data = await render(ctx);
   const dataAt = data?.reportAt || data?.dataUpdatedAt || null;
   if (data?.ok) {
@@ -169,7 +171,8 @@ export function bindAutoFit(screen) {
 }
 
 export function refreshDelayFor(contentId) {
-  if (contentId === "rain_forecast") return nextForecastRefreshDelay();
-  if (contentId === "future_rain") return 10 * 60 * 1000;
-  return 5 * 60 * 1000;
+  if (contentId === "rain" || contentId === "rain_forecast") {
+    return Math.min(60 * 1000, nextForecastRefreshDelay());
+  }
+  return 60 * 1000;
 }

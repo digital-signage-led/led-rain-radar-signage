@@ -4,6 +4,7 @@
  */
 
 export const OBSERVATION_POINTS = [
+  { id: "japan", name: "全国", prefecture: "japan", latitude: 37.6, longitude: 137.0, jmaOffice: "130000", priority: 1 },
   { id: "wakkanai", name: "稚内", prefecture: "hokkaido", latitude: 45.415, longitude: 141.6783, jmaOffice: "011000", priority: 2 },
   { id: "asahikawa", name: "旭川", prefecture: "hokkaido", latitude: 43.7567, longitude: 142.3717, jmaOffice: "012000", priority: 2 },
   { id: "abashiri", name: "網走", prefecture: "hokkaido", latitude: 44.0167, longitude: 144.2783, jmaOffice: "013000", priority: 2 },

@@ -4,23 +4,15 @@
 
 ## コンテンツ
 
-- 雨の予報 `rain_forecast`
-- 雨雲レーダー `rain_radar`
-- 今後の雨 `future_rain`
-- 降水ナウキャスト `precipitation_nowcast`
+雨の予報・雨雲レーダー・今後の雨・降水ナウキャストを、1つの「雨・レーダー」画面にまとめて表示します。
 
 ## 公開URL
 
-共通テンプレートは `index.html` のみです。都道府県とコンテンツはURLパラメータで切り替えます。
-
 ```
-index.html?prefecture=iwate&content=rain_forecast
-index.html?prefecture=iwate&content=rain_radar
-index.html?prefecture=iwate&content=future_rain
-index.html?prefecture=iwate&content=precipitation_nowcast
+index.html?prefecture=iwate&content=rain
 ```
 
-188通り（47 × 4）を同じ画面で表示します。
+旧パラメータ（`rain_forecast` / `rain_radar` / `future_rain` / `precipitation_nowcast`）も同じ画面を開きます。
 
 ## 管理画面
 
@@ -37,7 +29,7 @@ index.html?prefecture=iwate&content=precipitation_nowcast
 - 天気予報・降水確率：気象庁 `bosai/forecast`
 - 雨雲・ナウキャスト：気象庁 高解像度降水ナウキャスト `hrpns`
 - 今後の雨：気象庁 降水短時間予報 `rasrf`
-- 地図：国土地理院 淡色地図タイル
+- 地図：都道府県界のシンプルな白地図 + 気象庁降水タイル
 
 ## ローカル
 
