@@ -60,7 +60,7 @@ html.is-boot #boot-status { display: flex; }
   display: flex;
   align-items: center;
   gap: 24px;
-  min-height: 64px;
+  min-height: 72px;
 }
 
 .led-title-bar {
@@ -79,7 +79,7 @@ html.is-boot #boot-status { display: flex; }
 }
 
 .led-title {
-  font-size: calc(46px * var(--title-scale, 1));
+  font-size: calc(58px * var(--title-scale, 1));
   font-weight: 900;
   letter-spacing: 0.06em;
   line-height: 1;
@@ -88,7 +88,7 @@ html.is-boot #boot-status { display: flex; }
 
 .led-stamp,
 .led-point {
-  font-size: calc(26px * var(--font-scale, 1));
+  font-size: calc(30px * var(--font-scale, 1));
   font-weight: 700;
 }
 
@@ -96,9 +96,9 @@ html.is-boot #boot-status { display: flex; }
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 520px;
-  gap: calc(18px * var(--pad-scale, 1));
-  padding: calc(16px * var(--pad-scale, 1)) calc(28px * var(--pad-scale, 1)) calc(12px * var(--pad-scale, 1));
+  grid-template-columns: minmax(0, 1fr) 680px;
+  gap: calc(20px * var(--pad-scale, 1));
+  padding: calc(14px * var(--pad-scale, 1)) calc(24px * var(--pad-scale, 1)) calc(10px * var(--pad-scale, 1));
 }
 
 .led-screen.is-panel-off .led-body {
@@ -148,22 +148,19 @@ html.is-boot #boot-status { display: flex; }
   background: var(--panel);
   color: #eef5ff;
   border-radius: 16px;
-  padding: 22px 22px 16px;
+  padding: 24px 24px 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   transform: translate(var(--panel-x, 0px), var(--panel-y, 0px));
 }
 
 .panel-kicker {
-  font-size: calc(18px * var(--font-scale, 1));
-  letter-spacing: 0.18em;
-  color: #8ec8ff;
-  font-weight: 800;
+  display: none;
 }
 
 .panel-area {
-  font-size: calc(34px * var(--font-scale, 1));
+  font-size: calc(42px * var(--font-scale, 1));
   font-weight: 900;
   line-height: 1.15;
 }
@@ -175,27 +172,30 @@ html.is-boot #boot-status { display: flex; }
   align-items: center;
 }
 
-.wx-icon { width: 88px; height: 88px; }
+.wx-icon { width: 96px; height: 96px; }
+.led-screen[data-content="rain"] .wx-row { grid-template-columns: 96px 1fr; }
+.led-screen[data-content="rain"] .wx-icon { width: 96px; height: 96px; }
+.led-screen[data-content="rain"] .future-slots { max-height: 110px; }
 .wx-text {
-  font-size: calc(24px * var(--font-scale, 1));
+  font-size: calc(30px * var(--font-scale, 1));
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 .wx-hint {
-  font-size: calc(20px * var(--font-scale, 1));
+  font-size: calc(22px * var(--font-scale, 1));
   color: #c5d7f2;
   line-height: 1.4;
 }
 
 .temps, .section-label {
-  font-size: calc(18px * var(--font-scale, 1));
+  font-size: calc(20px * var(--font-scale, 1));
   color: #9fb6d8;
   font-weight: 700;
 }
 .temps strong {
   margin-left: 10px;
   color: #fff;
-  font-size: calc(28px * var(--font-scale, 1));
+  font-size: calc(32px * var(--font-scale, 1));
 }
 
 .pop-row, .weekly, .nowcast-compare {
@@ -214,10 +214,10 @@ html.is-boot #boot-status { display: flex; }
 .pop-cell span, .weekly-day em, .now-clock span, .nowcast-compare span {
   display: block;
   color: #9fb6d8;
-  font-size: calc(15px * var(--font-scale, 1));
+  font-size: calc(18px * var(--font-scale, 1));
 }
 .pop-cell strong, .weekly-day strong, .now-clock strong, .nowcast-compare strong {
-  font-size: calc(28px * var(--font-scale, 1));
+  font-size: calc(36px * var(--font-scale, 1));
   font-weight: 900;
 }
 .pop-cell.is-high strong, .weekly-day.is-high { color: #ff8a8a; }
@@ -306,8 +306,8 @@ html.is-boot #boot-status { display: flex; }
   border-color: #7eb6ff;
 }
 .future-slots em, .future-slots strong { display: block; }
-.future-slots em { font-size: 12px; color: #c5d7f2; font-style: normal; }
-.future-slots strong { font-size: 16px; }
+.future-slots em { font-size: 15px; color: #c5d7f2; font-style: normal; }
+.future-slots strong { font-size: 22px; }
 
 .data-error {
   margin-top: 12px;
