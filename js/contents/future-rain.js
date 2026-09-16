@@ -47,10 +47,20 @@ export async function renderFutureRain(ctx) {
   const clock = panel.querySelector("[data-frame-clock]");
   const kindEl = panel.querySelector("[data-kind]");
   const slots = panel.querySelector("[data-slots]");
+  const slotIndexes = data.frames.map((_, i) => i).filter((i, _, all) => {
+    if (i === 0 || i === all.length - 1) return true;
+    const date = frameDate(data.frames[i]);
+    return date && date.getMinutes() % 30 === 0;
+  });
+  const nearestSlot = (active) => slotIndexes.reduce((best, i) => (
+    Math.abs(i - active) < Math.abs(best - active) ? i : best
+  ), slotIndexes[0]);
   const renderSlots = (active) => {
-    slots.innerHTML = data.frames.map((frame, i) => {
+    const on = nearestSlot(active);
+    slots.innerHTML = slotIndexes.map((i) => {
+      const frame = data.frames[i];
       const date = frameDate(frame);
-      return `<button type="button" class="${i === active ? "is-on" : ""}" disabled>
+      return `<button type="button" class="${i === on ? "is-on" : ""}" disabled>
         <em>${kindLabel(frame)}</em>
         <strong>${formatClock(date)}</strong>
       </button>`;

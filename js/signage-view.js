@@ -98,7 +98,20 @@ export async function mountSignage(root, options = {}) {
   `;
   applyDesignTokens(els.screen, { common });
   applyVisibility(els, common);
-  if (options.fit !== false) fitFixedScreen(els.screen, FIXED_DESIGN.width, FIXED_DESIGN.height);
+  const fitTo = () => {
+    if (options.fit === false) return;
+    const host = options.fitHost || els.root;
+    const bounds = host && host !== document.body
+      ? { width: Math.max(1, host.clientWidth), height: Math.max(1, host.clientHeight) }
+      : null;
+    fitFixedScreen(els.screen, FIXED_DESIGN.width, FIXED_DESIGN.height, bounds);
+  };
+  fitTo();
+  if (options.fitHost) {
+    const ro = new ResizeObserver(fitTo);
+    ro.observe(options.fitHost);
+    cleanups.push(() => ro.disconnect());
+  }
 
   let map = options.map || null;
   if (!map) {

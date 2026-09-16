@@ -132,7 +132,8 @@ async function renderPreview() {
       content: state.store.contents[state.content],
       pointId: currentPointId()
     },
-    fit: true
+    fit: true,
+    fitHost: host
   });
 }
 

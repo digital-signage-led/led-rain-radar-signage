@@ -58,7 +58,7 @@ export async function fetchRainForecast({ prefecture, pointId }) {
   try {
     const forecast = await fetchJson(FORECAST_URL(office));
     const shortTerm = forecast[0] || {};
-    const weekly = forecast[1] || {};
+    const weeklyBlock = forecast[1] || {};
     const wxSeries = seriesBy(shortTerm, "weatherCodes") || seriesBy(shortTerm, "weathers");
     const popSeries = seriesBy(shortTerm, "pops");
     const tempSeries = seriesBy(shortTerm, "temps");
@@ -80,6 +80,16 @@ export async function fetchRainForecast({ prefecture, pointId }) {
     const reportAt = parseJst(shortTerm.reportDatetime);
     const weatherText = wxArea?.weathers?.[0] || "";
     const weatherCode = String(wxArea?.weatherCodes?.[0] || "200");
+    const weekly = weeklyPops(weeklyBlock, mapping);
+    const weeklyTemp = seriesBy(weeklyBlock, "tempsMax") || seriesBy(weeklyBlock, "tempsMin");
+    const weeklyTempArea = pickArea(weeklyTemp?.areas, [mapping.name, mapping.class10, mapping.office]);
+    const todayWeekly = weekly.find((day) => day.date && formatYmd(day.date) === todayYmd) || weekly[0];
+    if (todayWeekly && todayWeekly.pop == null) {
+      const todayValues = [todayPop.morning, todayPop.noon, todayPop.evening, todayPop.night].filter((v) => v != null);
+      todayWeekly.pop = todayValues.length ? Math.max(...todayValues) : null;
+    }
+    const tempMin = num(weeklyTempArea?.tempsMin?.[0]) ?? todayWeekly?.min ?? num(tempArea?.temps?.[0]);
+    const tempMax = num(weeklyTempArea?.tempsMax?.[0]) ?? todayWeekly?.max ?? num(tempArea?.temps?.[1]);
     const payload = {
       ok: true,
       fromCache: false,
@@ -98,9 +108,9 @@ export async function fetchRainForecast({ prefecture, pointId }) {
       winds: wxArea?.winds?.[0] || "",
       todayPop,
       tomorrowPop,
-      tempMin: num(tempArea?.temps?.[0]),
-      tempMax: num(tempArea?.temps?.[1]),
-      weekly: weeklyPops(weekly, mapping),
+      tempMin,
+      tempMax,
+      weekly,
       tomorrowWeather: wxArea?.weathers?.[1] || "",
       tomorrowCode: String(wxArea?.weatherCodes?.[1] || weatherCode)
     };

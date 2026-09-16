@@ -7,9 +7,9 @@ export function readWindowSize() {
   return { width: Math.max(1, Math.round(w)), height: Math.max(1, Math.round(h)) };
 }
 
-export function fitFixedScreen(element, designW = FIXED_DESIGN.width, designH = FIXED_DESIGN.height) {
+export function fitFixedScreen(element, designW = FIXED_DESIGN.width, designH = FIXED_DESIGN.height, bounds = null) {
   if (!element) return 1;
-  const win = readWindowSize();
+  const win = bounds || readWindowSize();
   const scale = Math.min(win.width / designW, win.height / designH);
   const ox = (win.width - designW * scale) / 2;
   const oy = (win.height - designH * scale) / 2;

@@ -49,7 +49,7 @@ export async function createMap(container, { prefecture, point, interactive = fa
     container.innerHTML = "";
   }
   const center = mapCenter(prefecture, point);
-  const zoom = zoomForPoint(prefecture, point);
+  const zoom = Math.round(zoomForPoint(prefecture, point));
   const map = L.map(container, {
     zoomControl: false,
     attributionControl: false,
@@ -59,8 +59,8 @@ export async function createMap(container, { prefecture, point, interactive = fa
     boxZoom: false,
     keyboard: false,
     tap: false,
-    zoomSnap: 0.1,
-    zoomDelta: 0.2
+    zoomSnap: 0.5,
+    zoomDelta: 0.5
   });
   L.tileLayer(GSI_PALE, {
     maxZoom: 14,

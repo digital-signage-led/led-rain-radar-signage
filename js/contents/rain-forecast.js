@@ -36,7 +36,9 @@ export async function renderRainForecast(ctx) {
     : "";
 
   const temps = ctx.contentSettings.showTemps !== false && (data.tempMin != null || data.tempMax != null)
-    ? `<div class="temps"><span>気温</span><strong>${data.tempMin ?? "—"} / ${data.tempMax ?? "—"}℃</strong></div>`
+    ? (data.tempMin != null && data.tempMax != null && data.tempMin !== data.tempMax
+      ? `<div class="temps"><span>気温</span><strong>最低 ${data.tempMin}℃　最高 ${data.tempMax}℃</strong></div>`
+      : `<div class="temps"><span>気温</span><strong>最高 ${data.tempMax ?? data.tempMin}℃</strong></div>`)
     : "";
 
   panel.innerHTML = `

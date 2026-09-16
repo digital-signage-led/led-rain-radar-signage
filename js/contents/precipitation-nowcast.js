@@ -64,10 +64,19 @@ export async function renderPrecipitationNowcast(ctx) {
       const ahead = minutesAhead(nowDate, date);
       if (clock) clock.textContent = formatClock(date);
       if (label) label.textContent = ahead <= 0 ? "現在の降水" : `${ahead}分先の降水`;
-      slots.innerHTML = data.frames.map((item, i) => {
+      const slotIndexes = data.frames.map((_, i) => i).filter((i, _, all) => {
+        if (i === 0 || i === all.length - 1) return true;
+        const d = frameDate(data.frames[i]);
+        return d && d.getMinutes() % 10 === 0;
+      });
+      const on = slotIndexes.reduce((best, i) => (
+        Math.abs(i - index) < Math.abs(best - index) ? i : best
+      ), slotIndexes[0]);
+      slots.innerHTML = slotIndexes.map((i) => {
+        const item = data.frames[i];
         const d = frameDate(item);
         const m = minutesAhead(nowDate, d);
-        return `<button type="button" class="${i === index ? "is-on" : ""}" disabled>
+        return `<button type="button" class="${i === on ? "is-on" : ""}" disabled>
           <em>${m <= 0 ? "現在" : `+${m}分`}</em>
           <strong>${formatClock(d)}</strong>
         </button>`;
