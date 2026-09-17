@@ -1,4 +1,4 @@
-const LASTGOOD_KEY = "rain-radar-lastgood-v2";
+const LASTGOOD_KEY = "rain-radar-lastgood-v3";
 
 function readAll() {
   try {

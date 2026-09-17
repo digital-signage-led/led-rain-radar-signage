@@ -32,7 +32,7 @@ export function defaultCommon() {
 
 export function defaultContentSettings() {
   return {
-    rain: { showTemps: true, playMs: 700, futureMinutes: 180 },
+    rain: { showTemps: true, playMs: 700, futureMinutes: 900 },
     rain_forecast: { showWeekly: true, showTemps: true },
     rain_radar: { playMs: 1800, pastMinutes: 60 },
     future_rain: { playMs: 2200, futureMinutes: 180 },

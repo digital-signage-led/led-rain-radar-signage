@@ -1,9 +1,11 @@
 /** 気象庁 bosai API の共通処理。画面ごとの取得コード複製を避ける。 */
 
+import { forecastIconFile } from "./jma-icons.js";
+
 export const JMA_ORIGIN = "https://www.jma.go.jp";
 export const AREA_URL = `${JMA_ORIGIN}/bosai/common/const/area.json`;
 export const FORECAST_URL = (office) => `${JMA_ORIGIN}/bosai/forecast/data/forecast/${office}.json`;
-export const FORECAST_ICON = (code) => `${JMA_ORIGIN}/bosai/forecast/img/${code}.svg`;
+export const FORECAST_ICON = (code) => `${JMA_ORIGIN}/bosai/forecast/img/${forecastIconFile(code)}`;
 
 const OFFICE_ALIAS = {
   "014030": "016000",

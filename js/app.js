@@ -48,7 +48,11 @@ if (!isEmbed) {
   const root = document.getElementById("app");
   let session = null;
 
-  async function render() {
+  async function render(quiet = false) {
+    if (quiet && session?.refresh) {
+      await session.refresh();
+      return;
+    }
     if (session) session.destroy();
     session = await mountSignage(root, {
       prefecture: prefecture.slug,
@@ -74,7 +78,7 @@ if (!isEmbed) {
     if (isPreview) return;
     const delay = refreshDelayFor(content.id);
     window.setTimeout(async () => {
-      await render();
+      await render(true);
       schedule();
     }, delay);
   }

@@ -54,19 +54,32 @@ export function errorPanel(message) {
   return `<div class="data-error">${message || "気象データを取得できませんでした"}</div>`;
 }
 
-export function playController({ frames, playMs, onFrame, holdMs = 2400 }) {
+export function playController({ frames, playMs, onFrame, holdMs = 2400, loops = 10, onLoopsDone }) {
   let index = 0;
   let timer = 0;
   let stopped = false;
+  let gen = 0;
+  let cycle = 0;
+  let waiting = false;
+  const maxLoops = Math.max(1, Number(loops) || 10);
 
   const step = () => {
-    if (stopped || !frames.length) return;
+    if (stopped || !frames.length || waiting) return;
+    const myGen = gen;
     const current = index;
     const isLast = current === frames.length - 1;
     const delay = isLast ? holdMs : (playMs || 1800);
     index = (current + 1) % frames.length;
     Promise.resolve(onFrame(frames[current], current, frames.length)).finally(() => {
-      if (stopped) return;
+      if (stopped || myGen !== gen) return;
+      if (isLast) {
+        cycle += 1;
+        if (cycle >= maxLoops) {
+          waiting = true;
+          onLoopsDone?.();
+          return;
+        }
+      }
       timer = window.setTimeout(step, Math.max(400, delay));
     });
   };
@@ -77,9 +90,27 @@ export function playController({ frames, playMs, onFrame, holdMs = 2400 }) {
       stopped = true;
       window.clearTimeout(timer);
     },
+    loopsFinished() {
+      return waiting;
+    },
     setFrames(next) {
-      frames = next;
+      const incoming = Array.isArray(next) && next.length ? next : null;
+      if (!incoming) {
+        if (waiting && !stopped) {
+          waiting = false;
+          cycle = 0;
+          index = 0;
+          step();
+        }
+        return;
+      }
+      frames = incoming;
       index = 0;
+      cycle = 0;
+      waiting = false;
+      gen += 1;
+      window.clearTimeout(timer);
+      step();
     }
   };
 }

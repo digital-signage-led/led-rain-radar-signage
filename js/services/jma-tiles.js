@@ -24,7 +24,8 @@ function sortByValid(list) {
 export function tileUrl(frame) {
   if (!frame) return "";
   if (frame.product === "rasrf") {
-    return `https://www.jma.go.jp/bosai/jmatile/data/rasrf/${frame.basetime}/none/${frame.validtime}/surf/rasrf/{z}/{x}/{y}.png`;
+    const member = frame.member || "none";
+    return `https://www.jma.go.jp/bosai/jmatile/data/rasrf/${frame.basetime}/${member}/${frame.validtime}/surf/rasrf/{z}/{x}/{y}.png`;
   }
   return `https://www.jma.go.jp/bosai/jmatile/data/nowc/${frame.basetime}/none/${frame.validtime}/surf/hrpns/{z}/{x}/{y}.png`;
 }
@@ -37,6 +38,7 @@ function toFrame(entry, kind, product) {
   return {
     basetime: entry.basetime || entry.validtime,
     validtime: entry.validtime || entry.basetime,
+    member: entry.member || "none",
     kind,
     product,
     date: nowcToDate(entry.validtime || entry.basetime)
@@ -55,9 +57,9 @@ function uniqueFrames(list) {
   return out;
 }
 
-export async function fetchTileCatalog() {
+export async function fetchTileCatalog(options = {}) {
   const now = Date.now();
-  if (frameMemo.value && now - frameMemo.at < TILE_CACHE_TTL) return frameMemo.value;
+  if (!options.force && frameMemo.value && now - frameMemo.at < TILE_CACHE_TTL) return frameMemo.value;
   const q = `?_=${now}`;
   const [n1, n2, rasrf] = await Promise.all([
     fetchJson(NOWC_N1 + q),
@@ -101,21 +103,27 @@ export function nowcastFrames(catalog, horizonMinutes = 60) {
   return uniqueFrames([...current, ...future]);
 }
 
-export function futureRainFrames(catalog, futureMinutes = 180) {
+export function futureRainFrames(catalog, futureMinutes = 900) {
   const nowMs = catalog.latestObsMs || Date.now();
-  const nearCut = nowMs + Math.min(55, Number(futureMinutes) || 180) * 60 * 1000;
+  const nowcastCut = nowMs + 60 * 60 * 1000;
+  const futureCut = nowMs + Math.max(60, Number(futureMinutes) || 900) * 60 * 1000;
   const current = catalog.latestObs ? [{ ...catalog.latestObs, kind: "now" }] : [];
   const near = (catalog.nowcastForecast || []).filter((f) => {
     const ms = parseNowcMs(f.validtime);
-    return ms != null && ms > nowMs && ms <= nearCut;
+    return ms != null && ms > nowMs && ms <= nowcastCut;
   });
-  return uniqueFrames([...current, ...near]);
+  const later = (member) => (catalog.rasrf || []).filter((f) => {
+    if (f.member !== member) return false;
+    const ms = parseNowcMs(f.validtime);
+    return ms != null && ms > nowMs + 55 * 60 * 1000 && ms <= futureCut;
+  });
+  return uniqueFrames([...current, ...near, ...later("immed"), ...later("none")]);
 }
 
 export async function loadTileSet(kind, options) {
   const key = cacheKey(options.prefecture, kind, options.pointId);
   try {
-    const catalog = await fetchTileCatalog();
+    const catalog = await fetchTileCatalog({ force: !!options.force });
     let frames = [];
     if (kind === "rain_radar") frames = radarFrames(catalog, options.pastMinutes);
     else if (kind === "precipitation_nowcast") frames = nowcastFrames(catalog, options.horizonMinutes);

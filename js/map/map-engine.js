@@ -310,9 +310,10 @@ export async function createMap(container, { prefecture, point, interactive = fa
     },
     setOverlay(urlTemplate) {
       if (!urlTemplate) return Promise.resolve();
-      if (/\/rasrf\//.test(urlTemplate)) return Promise.resolve();
       if (urlTemplate === overlayUrl && overlay) return Promise.resolve();
-      const nativeZoom = 10;
+      const nativeZoom = /\/rasrf\/.*\/immed\//.test(urlTemplate)
+        ? 8
+        : (/\/rasrf\//.test(urlTemplate) ? 6 : 10);
       if (incoming) {
         incoming.cancel();
         incoming = null;
@@ -320,7 +321,7 @@ export async function createMap(container, { prefecture, point, interactive = fa
       return new Promise((resolve) => {
         const layer = L.tileLayer(urlTemplate, {
           pane: "rainPane",
-          opacity: overlay ? 0 : 0.88,
+          opacity: 0,
           maxZoom: 10,
           maxNativeZoom: nativeZoom,
           minZoom: 5,
@@ -336,16 +337,21 @@ export async function createMap(container, { prefecture, point, interactive = fa
           errorTileUrl: TRANSPARENT
         });
         let done = false;
-        const finish = () => {
+        let goodTiles = 0;
+        const release = (useLayer) => {
           if (done) return;
           done = true;
           incoming = null;
-          layer.setOpacity(0.88);
-          if (overlay && overlay !== layer) {
-            try { map.removeLayer(overlay); } catch { /* ignore */ }
+          if (useLayer) {
+            layer.setOpacity(0.88);
+            if (overlay && overlay !== layer) {
+              try { map.removeLayer(overlay); } catch { /* ignore */ }
+            }
+            overlay = layer;
+            overlayUrl = urlTemplate;
+          } else {
+            try { map.removeLayer(layer); } catch { /* ignore */ }
           }
-          overlay = layer;
-          overlayUrl = urlTemplate;
           resolve();
         };
         incoming = {
@@ -356,9 +362,23 @@ export async function createMap(container, { prefecture, point, interactive = fa
             resolve();
           }
         };
-        layer.once("load", finish);
+        layer.on("tileload", (event) => {
+          const img = event?.tile;
+          if (img && img.naturalWidth > 2 && img.naturalHeight > 2) goodTiles += 1;
+        });
+        layer.once("load", () => {
+          if (overlay && goodTiles === 0) {
+            release(false);
+            return;
+          }
+          release(true);
+        });
         layer.addTo(map);
-        window.setTimeout(finish, 1100);
+        window.setTimeout(() => {
+          if (done) return;
+          if (goodTiles > 0) release(true);
+          else resolve();
+        }, 900);
       });
     },
     invalidate() {

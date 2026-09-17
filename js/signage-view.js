@@ -30,6 +30,20 @@ function screenHtml() {
       <div class="led-body">
         <div class="map-stage">
           <div class="map-canvas"></div>
+          <div class="map-timebar">
+            <div class="time-bar-head">
+              <span data-kind>現在</span>
+              <strong data-frame-clock>--</strong>
+            </div>
+            <div class="time-bar-track">
+              <i data-timebar-fill></i>
+              <b data-timebar-knob></b>
+            </div>
+            <div class="time-bar-axis">
+              <span data-timebar-start>--</span>
+              <span data-timebar-end>--</span>
+            </div>
+          </div>
         </div>
         <aside class="info-panel"></aside>
       </div>
@@ -49,6 +63,7 @@ export function buildScreen(root) {
     point: screen.querySelector(".led-point"),
     panel: screen.querySelector(".info-panel"),
     mapCanvas: screen.querySelector(".map-canvas"),
+    timebar: screen.querySelector(".map-timebar"),
     attr: screen.querySelector(".map-attribution")
   };
 }
@@ -71,7 +86,9 @@ export async function mountSignage(root, options = {}) {
   const common = published.common || {};
   const contentSettings = published.content || published.contents?.[content.id] || {};
   const cleanups = [];
-  const els = root.querySelector(".led-screen") ? {
+  const reuseScreen = !!root.querySelector(".led-screen");
+  const quiet = !!options.quiet && reuseScreen;
+  const els = reuseScreen ? {
     root,
     screen: root.querySelector(".led-screen"),
     title: root.querySelector(".led-title"),
@@ -79,23 +96,26 @@ export async function mountSignage(root, options = {}) {
     point: root.querySelector(".led-point"),
     panel: root.querySelector(".info-panel"),
     mapCanvas: root.querySelector(".map-canvas"),
+    timebar: root.querySelector(".map-timebar"),
     attr: root.querySelector(".map-attribution")
   } : buildScreen(root);
 
   els.screen.dataset.prefecture = prefecture.slug;
   els.screen.dataset.content = content.id;
   els.title.textContent = `${prefecture.name}｜${content.name}`;
-  els.stamp.textContent = "データ取得中";
-  els.point.textContent = prefecture.national ? "" : (point ? `観測地点 ${point.name}` : "");
-  els.attr.textContent = MAP_ATTRIBUTION;
-  els.panel.innerHTML = `
-    <div class="panel-kicker">${content.name}</div>
-    <div class="panel-area">${prefecture.name}${!prefecture.national && point ? `／${point.name}` : ""}</div>
-    <p class="wx-hint">${content.description}</p>
-    <div class="time-grid"><div><span class="k">対象地域</span><strong>${regionOf(prefecture.slug).name}</strong></div></div>
-  `;
-  applyDesignTokens(els.screen, { common });
-  applyVisibility(els, common);
+  if (!quiet) {
+    els.stamp.textContent = "データ取得中";
+    els.point.textContent = prefecture.national ? "" : (point ? `観測地点 ${point.name}` : "");
+    els.attr.textContent = MAP_ATTRIBUTION;
+    els.panel.innerHTML = `
+      <div class="panel-kicker">${content.name}</div>
+      <div class="panel-area">${prefecture.name}${!prefecture.national && point ? `／${point.name}` : ""}</div>
+      <p class="wx-hint">${content.description}</p>
+      <div class="time-grid"><div><span class="k">対象地域</span><strong>${regionOf(prefecture.slug).name}</strong></div></div>
+    `;
+    applyDesignTokens(els.screen, { common });
+    applyVisibility(els, common);
+  }
   if (prefecture.national) els.point.hidden = true;
   let map = options.map || null;
   const fitTo = () => {
@@ -121,10 +141,8 @@ export async function mountSignage(root, options = {}) {
       point,
       interactive: !!options.interactive
     });
-  } else {
-    map.setView(prefecture, point);
   }
-  fitTo();
+  if (!quiet) fitTo();
 
   const ctx = {
     prefecture,
@@ -134,33 +152,58 @@ export async function mountSignage(root, options = {}) {
     contentSettings,
     map,
     els,
+    quiet,
+    player: options.player || null,
     addCleanup(fn) { cleanups.push(fn); }
   };
 
   const render = RENDERERS[content.id] || renderRainCombined;
-  const data = await render(ctx);
-  const dataAt = data?.reportAt || data?.dataUpdatedAt || null;
-  if (data?.ok) {
-    els.stamp.textContent = dataAt
-      ? `${formatStamp(dataAt)}更新${data.fromCache ? "（前回データ）" : ""}`
-      : "更新時刻を確認中";
-  } else {
-    els.stamp.textContent = "気象データを取得できませんでした";
-  }
 
-  return {
+  let refreshNow = null;
+  ctx.onPlayLoopsDone = () => {
+    refreshNow?.();
+  };
+
+  const applyData = async (isQuiet) => {
+    ctx.quiet = isQuiet;
+    ctx.map = map;
+    const data = await render(ctx);
+    const dataAt = data?.dataUpdatedAt || data?.reportAt || null;
+    if (data?.ok) {
+      els.stamp.textContent = dataAt
+        ? `${formatStamp(dataAt)}更新${data.fromCache ? "（前回データ）" : ""}`
+        : "更新時刻を確認中";
+    } else if (!isQuiet) {
+      els.stamp.textContent = "気象データを取得できませんでした";
+    }
+    return data;
+  };
+
+  const data = await applyData(quiet);
+  const api = {
     prefecture,
     content,
     point,
     map,
     els,
     data,
+    player: ctx.player || null,
+    async refresh() {
+      if (ctx.player && !ctx.player.loopsFinished()) return api;
+      api.data = await applyData(true);
+      api.player = ctx.player || api.player;
+      return api;
+    },
     destroy() {
       cleanups.forEach((fn) => {
         try { fn(); } catch { /* ignore */ }
       });
     }
   };
+  refreshNow = () => {
+    api.refresh();
+  };
+  return api;
 }
 
 export function bindAutoFit(screen) {
